@@ -22,13 +22,12 @@ This example app provides commands to send automatic messages
 
 You can use Placeholders in your messages
 
+* $CHANNEL
+* $BOT
+
 **Only on private**
 * $NICK
 * $AGE
-
-**On private & public **
-* $CHANNEL
-* $BOT
 
 ### Installation
 
