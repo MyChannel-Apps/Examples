@@ -42,24 +42,40 @@ var App = (new function() {
 		
 		switch(send_method) {
 			case 'public':
-				Bot.public(parseMessageString(message));
+				message = parseMessageString(message);
+				
+				if(message == undefined) {
+					return;
+				}
+				
+				Bot.public(message);
 			break;
 			case 'private':
 				Channel.getUsers().each(function(user) {
-					Bot.private(user, parseMessageString(message, user));
+					message = parseMessageString(message, user);
+				
+					if(message == undefined) {
+						return;
+					}
+					
+					Bot.private(user, message);
 				});
 			break;
 		}
 	}
 	
 	function parseMessageString(string, user) {
+		if(string == undefined || string == null || typeof(string) == 'object') {
+			return;
+		}
+		
 		if(user != undefined) {
 			string = string.replace(/\$NICK/g, user.getProfileLink());
 			string = string.replace(/\$AGE/g, user.getAge());
 		}
 		
 		string = string.replace(/\$CHANNEL/g, Channel.getName());
-		string = string.replace(/\$BOT/g, Bot.getName());
+		string = string.replace(/\$BOT/g, Bot.getNick());
 		
 		return string;
 	}
@@ -112,13 +128,22 @@ var App = (new function() {
 					text.append('Momentan existieren keine Spam-Nachrichten im Channel.');
 				} else {
 					text.append('Folgende Spam-Nachrichten sind im Channel gespeichert:');
+					var temp = [];
+					
 					messages.each(function(message, index) {
+						if(message == undefined || message == null || typeof(message) == 'object') {
+							Logger.warn('Messages[' + index + '] is ' + message);
+							return;
+						} else {
+							temp.push(message);
+						}
+						
 						text.newLine();
-						text.append(message);
+						text.append(message.escapeKCode());
 						text.append(' - _');
 						
 						var link_edit = new KLink('Bearbeiten');
-						link_edit.setCommand('/tf-overridesb /spam edit:' + index + ':[' + message + ']');
+						link_edit.setCommand('/tf-overridesb /spam edit:' + index + ':[' + message.escapeKCode() + ']');
 						text.append(Color.CHANNEL_BLUE);
 						text.append(link_edit);
 						
@@ -131,6 +156,7 @@ var App = (new function() {
 						
 						text.append('_°r°§');
 					});
+					messages = temp;
 				}
 				
 				Bot.private(user, text);
@@ -165,7 +191,16 @@ var App = (new function() {
 						Bot.private(user, 'Die Nachricht wurde erfolgreich hinzugefügt.');
 					break;
 					case 'remove':
-						delete messages[parseInt(message, 16)];
+						var temp = [];
+						messages.each(function(text, index) {
+							if(parseInt(message, 16) == index) {
+								return;
+							}
+							
+							temp.push(text);
+						});
+						
+						messages = temp;
 						Bot.private(user, 'Die Nachricht wurde erfolgreich gelöscht.');
 					break;
 					case 'edit':
@@ -212,7 +247,7 @@ var App = (new function() {
 					break;
 					case 'method':
 						if(message.length == 0) {
-							Bot.private(user, 'Derzeit werden die Spam-Nachrichten _' + getSendMethod() + '_versendet.');
+							Bot.private(user, 'Derzeit werden die Spam-Nachrichten _' + getSendMethod() + '_ versendet.');
 							return;
 						}
 						
